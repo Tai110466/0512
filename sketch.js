@@ -36,6 +36,14 @@ function draw() {
   let x = (width - w) / 2; // 置中水平座標
   let y = (height - h) / 2; // 置中垂直座標
 
+  // 設定文字樣式並繪製文字
+  fill(0); // 黑色文字
+  textSize(24); // 文字大小
+  textAlign(CENTER, TOP); // 水平置中，垂直靠上
+  
+  text("412730227陳永泰", width / 2, 20); // 第一行文字，距離頂部 20 像素
+  text("作品為影像辨識_耳環臉譜", width / 2, 50); // 第二行文字，距離頂部 50 像素
+
   push();
   // 將座標系移動到影像預定位置的右緣，準備進行翻轉
   translate(x + w, y);
@@ -48,8 +56,8 @@ function draw() {
   if (faces.length > 0) {
     let face = faces[0];
     // MediaPipe Face Mesh 特徵點索引：177 為左耳垂區域，401 為右耳垂區域
-    if (face.keypoints[177]) drawEarring(face.keypoints[177], w, h);
-    if (face.keypoints[401]) drawEarring(face.keypoints[401], w, h);
+    if (face.keypoints[132]) drawEarring(face.keypoints[132], w, h);
+    if (face.keypoints[361]) drawEarring(face.keypoints[361], w, h);
   }
   pop();
 }
