@@ -1,6 +1,7 @@
 let video;
 let faceMesh;
 let faces = [];
+let earringImg;
 
 // 用於平滑化耳環位置的變數
 let smoothLeft = { x: 0, y: 0 };
@@ -10,6 +11,7 @@ function preload() {
   // 載入 ml5.js v1 的 faceMesh 模型
   // 在 preload 載入可確保 setup 執行前模型已準備就緒
   faceMesh = ml5.faceMesh({ maxFaces: 1, refineLandmarks: false, flipHorizontal: false });
+  earringImg = loadImage('picture/acc1_ring.png');
 }
 
 function setup() {
@@ -115,16 +117,13 @@ function drawEarring(pt, imgW, imgH) {
   let px = map(pt.x, 0, video.width, 0, imgW);
   let py = map(pt.y, 0, video.height, 0, imgH);
 
-  // 讓耳環也有發光感
-  drawingContext.shadowBlur = 15;
-  drawingContext.shadowColor = 'yellow';
-  fill(255, 255, 0); // 設定圓圈顏色為黃色
-  noStroke();
-  // 由耳垂位置開始，垂直向下畫出三個圓圈
-  for (let i = 0; i < 3; i++) {
-    // 讓圓圈往下稍微變小，看起來更自然
-    circle(px, py + (i + 1) * 15, 10 - i * 2);
-  }
+  // 顯示耳環圖片
+  // 將圖片中心點對準座標，並稍微往下偏移使其掛在耳垂
+  push();
+  imageMode(CENTER);
+  // 調整大小 (這裡設定寬 40, 高 60) 並在 y 軸增加偏移使耳環自然下墜
+  image(earringImg, px, py + 25, 40, 60);
+  pop();
   drawingContext.shadowBlur = 0;
 }
 
