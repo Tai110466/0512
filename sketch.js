@@ -1,17 +1,30 @@
 let video;
 let faceMesh;
+let handPose;
 let faces = [];
-let earringImg;
+let hands = [];
+let earringImages = [];
+let currentEarringImg;
 
 // 用於平滑化耳環位置的變數
 let smoothLeft = { x: 0, y: 0 };
 let smoothRight = { x: 0, y: 0 };
 
 function preload() {
-  // 載入 ml5.js v1 的 faceMesh 模型
+  // 載入 ml5.js v1 模型
   // 在 preload 載入可確保 setup 執行前模型已準備就緒
   faceMesh = ml5.faceMesh({ maxFaces: 1, refineLandmarks: false, flipHorizontal: false });
-  earringImg = loadImage('picture/acc1_ring.png');
+  handPose = ml5.handPose({ flipHorizontal: false });
+
+  // 載入 5 種耳環圖片
+  earringImages[0] = loadImage('picture/acc1_ring.png');
+  earringImages[1] = loadImage('picture/acc2_pearl.png');
+  earringImages[2] = loadImage('picture/acc3_tassel.png');
+  earringImages[3] = loadImage('picture/acc4_jade.png');
+  earringImages[4] = loadImage('picture/acc5_phoenix.png');
+  
+  // 預設使用第一款
+  currentEarringImg = earringImages[0];
 }
 
 function setup() {
@@ -20,8 +33,9 @@ function setup() {
   // 擷取攝影機影像
   video = createCapture(VIDEO, (stream) => {
     console.log("攝影機已啟動");
-    // 確保攝影機啟動後再開始偵測
+    // 確保攝影機啟動後再開始偵測臉部與手部
     faceMesh.detectStart(video, gotFaces);
+    handPose.detectStart(video, gotHands);
   });
   video.size(640, 480); // 設定固定解析度以利辨識座標對應
   video.hide();
@@ -32,9 +46,23 @@ function gotFaces(results) {
   faces = results;
 }
 
+function gotHands(results) {
+  // 將手勢辨識結果存入 hands 變數
+  hands = results;
+}
+
 function draw() {
   // 繪製酷酷的動態漸層背景與星點
   drawCoolBackground();
+
+  // 偵測手勢並切換耳環
+  if (hands.length > 0) {
+    let fingerCount = getFingerCount(hands[0]);
+    // 當手指數量在 1~5 之間時切換圖片
+    if (fingerCount >= 1 && fingerCount <= 5) {
+      currentEarringImg = earringImages[fingerCount - 1];
+    }
+  }
 
   let w = width * 0.5; // 畫布寬度的 50%
   let h = height * 0.5; // 畫布高度的 50%
@@ -90,6 +118,25 @@ function draw() {
   drawingContext.shadowBlur = 0; // 取消發光避免影響後續繪圖
 }
 
+function getFingerCount(hand) {
+  let count = 0;
+  let keypoints = hand.keypoints;
+
+  // 判斷食指、中指、無名指、小指是否伸直 (Tip Y < Joint Y)
+  if (keypoints[8].y < keypoints[6].y) count++;
+  if (keypoints[12].y < keypoints[10].y) count++;
+  if (keypoints[16].y < keypoints[14].y) count++;
+  if (keypoints[20].y < keypoints[18].y) count++;
+
+  // 判斷大拇指 (比較大拇指尖與食指根部的距離)
+  let thumbTip = keypoints[4];
+  let thumbBase = keypoints[2];
+  let pinkyBase = keypoints[17];
+  if (dist(thumbTip.x, thumbTip.y, pinkyBase.x, pinkyBase.y) > dist(thumbBase.x, thumbBase.y, pinkyBase.x, pinkyBase.y)) count++;
+
+  return count;
+}
+
 function drawCoolBackground() {
   // 繪製深藍色調的動態漸層
   noStroke();
@@ -122,7 +169,7 @@ function drawEarring(pt, imgW, imgH) {
   push();
   imageMode(CENTER);
   // 調整大小 (這裡設定寬 40, 高 60) 並在 y 軸增加偏移使耳環自然下墜
-  image(earringImg, px, py + 25, 40, 60);
+  image(currentEarringImg, px, py + 25, 40, 60);
   pop();
   drawingContext.shadowBlur = 0;
 }
