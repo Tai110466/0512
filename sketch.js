@@ -2,6 +2,10 @@ let video;
 let faceMesh;
 let faces = [];
 
+// 用於平滑化耳環位置的變數
+let smoothLeft = { x: 0, y: 0 };
+let smoothRight = { x: 0, y: 0 };
+
 function preload() {
   // 載入 ml5.js v1 的 faceMesh 模型
   // 在 preload 載入可確保 setup 執行前模型已準備就緒
@@ -14,12 +18,11 @@ function setup() {
   // 擷取攝影機影像
   video = createCapture(VIDEO, (stream) => {
     console.log("攝影機已啟動");
+    // 確保攝影機啟動後再開始偵測
+    faceMesh.detectStart(video, gotFaces);
   });
   video.size(640, 480); // 設定固定解析度以利辨識座標對應
   video.hide();
-
-  // 開始持續偵測臉部特徵點
-  faceMesh.detectStart(video, gotFaces);
 }
 
 function gotFaces(results) {
@@ -36,14 +39,6 @@ function draw() {
   let x = (width - w) / 2; // 置中水平座標
   let y = (height - h) / 2; // 置中垂直座標
 
-  // 設定文字樣式並繪製文字
-  fill(0); // 黑色文字
-  textSize(24); // 文字大小
-  textAlign(CENTER, TOP); // 水平置中，垂直靠上
-  
-  text("412730227陳永泰", width / 2, 20); // 第一行文字，距離頂部 20 像素
-  text("作品為影像辨識_耳環臉譜", width / 2, 50); // 第二行文字，距離頂部 50 像素
-
   push();
   // 將座標系移動到影像預定位置的右緣，準備進行翻轉
   translate(x + w, y);
@@ -55,11 +50,30 @@ function draw() {
   // 若辨識到臉部，則在左右耳垂處畫出三個黃色圓圈 (耳環效果)
   if (faces.length > 0) {
     let face = faces[0];
-    // MediaPipe Face Mesh 特徵點索引：177 為左耳垂區域，401 為右耳垂區域
-    if (face.keypoints[132]) drawEarring(face.keypoints[132], w, h);
-    if (face.keypoints[361]) drawEarring(face.keypoints[361], w, h);
+    
+    // 取得新的特徵點 (177: 左耳垂, 401: 右耳垂)
+    let ptL = face.keypoints[177];
+    let ptR = face.keypoints[401];
+
+    if (ptL && ptR) {
+      // 使用 lerp 進行平滑化處理，0.2 代表移動的靈敏度 (越小越穩)
+      smoothLeft.x = lerp(smoothLeft.x, ptL.x, 0.2);
+      smoothLeft.y = lerp(smoothLeft.y, ptL.y, 0.2);
+      smoothRight.x = lerp(smoothRight.x, ptR.x, 0.2);
+      smoothRight.y = lerp(smoothRight.y, ptR.y, 0.2);
+
+      drawEarring(smoothLeft, w, h);
+      drawEarring(smoothRight, w, h);
+    }
   }
   pop();
+
+  // --- 文字移到最上層繪製 ---
+  fill(0); // 黑色文字
+  textSize(32); // 放大一點比較清楚
+  textAlign(CENTER, TOP);
+  text("412730227陳永泰", width / 2, 30);
+  text("作品為影像辨識_耳環臉譜", width / 2, 75);
 }
 
 function drawEarring(pt, imgW, imgH) {
