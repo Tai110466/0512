@@ -31,8 +31,8 @@ function gotFaces(results) {
 }
 
 function draw() {
-  // 設定背景顏色為 e7c6ff
-  background('#e7c6ff');
+  // 繪製酷酷的動態漸層背景與星點
+  drawCoolBackground();
 
   let w = width * 0.5; // 畫布寬度的 50%
   let h = height * 0.5; // 畫布高度的 50%
@@ -44,6 +44,13 @@ function draw() {
   translate(x + w, y);
   // 水平翻轉 (x 軸 -1)
   scale(-1, 1);
+
+  // 幫影像加一個科技感的發光邊框
+  noFill();
+  stroke(255, 255, 0, 150);
+  strokeWeight(3);
+  rect(-3, -3, w + 6, h + 6, 10);
+
   // 繪製影像
   image(video, 0, 0, w, h);
 
@@ -56,11 +63,11 @@ function draw() {
     let ptR = face.keypoints[401];
 
     if (ptL && ptR) {
-      // 使用 lerp 進行平滑化處理，0.2 代表移動的靈敏度 (越小越穩)
-      smoothLeft.x = lerp(smoothLeft.x, ptL.x, 0.2);
-      smoothLeft.y = lerp(smoothLeft.y, ptL.y, 0.2);
-      smoothRight.x = lerp(smoothRight.x, ptR.x, 0.2);
-      smoothRight.y = lerp(smoothRight.y, ptR.y, 0.2);
+      // 使用 lerp 進行平滑化處理，0.1 比 0.2 更穩但會稍微慢一點點
+      smoothLeft.x = lerp(smoothLeft.x, ptL.x, 0.1);
+      smoothLeft.y = lerp(smoothLeft.y, ptL.y, 0.1);
+      smoothRight.x = lerp(smoothRight.x, ptR.x, 0.1);
+      smoothRight.y = lerp(smoothRight.y, ptR.y, 0.1);
 
       drawEarring(smoothLeft, w, h);
       drawEarring(smoothRight, w, h);
@@ -69,11 +76,37 @@ function draw() {
   pop();
 
   // --- 文字移到最上層繪製 ---
-  fill(0); // 黑色文字
+  fill(255); // 白色文字在深色背景更明顯
   textSize(32); // 放大一點比較清楚
   textAlign(CENTER, TOP);
+  
+  // 為文字加上霓虹發光效果
+  drawingContext.shadowBlur = 20;
+  drawingContext.shadowColor = 'yellow';
   text("412730227陳永泰", width / 2, 30);
   text("作品為影像辨識_耳環臉譜", width / 2, 75);
+  drawingContext.shadowBlur = 0; // 取消發光避免影響後續繪圖
+}
+
+function drawCoolBackground() {
+  // 繪製深藍色調的動態漸層
+  noStroke();
+  for (let i = 0; i <= height; i += 10) {
+    let inter = map(i, 0, height, 0, 1);
+    // 產生深邃的星空色調
+    let c = lerpColor(color('#0f0c29'), color('#302b63'), inter);
+    fill(c);
+    rect(0, i, width, 10);
+  }
+  
+  // 增加一些閃爍的動態光點（星星）
+  fill(255, 255, 255, 80);
+  for (let i = 0; i < 40; i++) {
+    let xStar = noise(i, frameCount * 0.002) * width;
+    let yStar = noise(i + 10, frameCount * 0.002) * height;
+    let size = noise(i + 20, frameCount * 0.01) * 6;
+    circle(xStar, yStar, size);
+  }
 }
 
 function drawEarring(pt, imgW, imgH) {
@@ -82,6 +115,9 @@ function drawEarring(pt, imgW, imgH) {
   let px = map(pt.x, 0, video.width, 0, imgW);
   let py = map(pt.y, 0, video.height, 0, imgH);
 
+  // 讓耳環也有發光感
+  drawingContext.shadowBlur = 15;
+  drawingContext.shadowColor = 'yellow';
   fill(255, 255, 0); // 設定圓圈顏色為黃色
   noStroke();
   // 由耳垂位置開始，垂直向下畫出三個圓圈
@@ -89,6 +125,7 @@ function drawEarring(pt, imgW, imgH) {
     // 讓圓圈往下稍微變小，看起來更自然
     circle(px, py + (i + 1) * 15, 10 - i * 2);
   }
+  drawingContext.shadowBlur = 0;
 }
 
 function windowResized() {
